@@ -2,7 +2,9 @@ import socket
 import os
 import subprocess
 
+directory = "htdocs"
 
+# Function to read the content of a file
 def read_file_content(file_path):
     try:
         with open(file_path, 'r') as file:
@@ -12,17 +14,13 @@ def read_file_content(file_path):
         print("Error reading file:", e)
         return None
 
-
-
-def execute_php_script(script_content, query_string):
+# Function to execute a PHP script and return its output
+def execute_php_script(script_path, query_string):
+    print("script", script_path)
+    print("query string", query_string)
     try:
-        # Create a temporary PHP script file
-        temp_script_path = "temp.php"
-        with open(temp_script_path, 'w') as temp_script_file:
-            temp_script_file.write(script_content)
-
         # Use PHP to execute the temporary script with the query string
-        php_command = ['php', temp_script_path, query_string]
+        php_command = ['php', script_path, query_string]
         php_process = subprocess.Popen(
             php_command,
             stdout=subprocess.PIPE,
@@ -32,21 +30,21 @@ def execute_php_script(script_content, query_string):
         # Capture the output (HTML content) from PHP
         php_output, php_errors = php_process.communicate()
 
-        # Remove the temporary PHP script file
-        os.remove(temp_script_path)
 
         return php_output.decode('utf-8')
     except Exception as e:
         print("Error executing PHP script:", e)
         return None
 
-
-
+# Function to send an error response
 def send_error_response(client_socket, status, message):
+
     response = f"HTTP/1.1 {status}\r\nContent-Type: text/html\r\n\r\n<h1>{status}</h1><p>{message}</p>"
     client_socket.send(response.encode('utf-8'))
 
+# Function to start an HTTP server
 def httpserver(host, port):
+
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((host, port))
     s.listen(5)
@@ -54,51 +52,69 @@ def httpserver(host, port):
 
     while True:
         conn, addr = s.accept()
-        #print("Connection from:", addr)
         
         request = conn.recv(4096).decode('utf-8')
         request_lines = request.split('\r\n')
         request_method, request_path, _ = request_lines[0].split()
 
-        #print("Request:", request)
-        #print("Request Method:", request_method)
-        #print("Request Path:", request_path)
+        query_string = ""
+        if '?' in request_path:
+            request_path, query_string = request_path.split('?')
+    
 
-        # Handle GET request
-        if request_method == 'GET':
-            # Check if the requested file is a PHP script
-            if request_path.endswith('.php'):
-                script_path = os.path.join("htdocs", request_path.lstrip('/'))
-                query_string = ''  # Initialize the query string as empty
-                if '?' in script_path:
-                    script_path, query_string = script_path.split('?')
-                if os.path.exists(script_path):
-                    script_content = read_file_content(script_path)
-                    output = execute_php_script(script_content, query_string)
-                    print("script_path:", script_path)
+        # Check if the requested file is a PHP script
+        if request_path.endswith('.php'):
+
+            # Handle GET request
+            if request_method == 'GET':
+                
+                php_request_path = os.path.join(directory, request_path.lstrip('/'))
+
+                if os.path.exists(php_request_path):
+                    output = execute_php_script(php_request_path, query_string)
+                    print("script_path:", php_request_path)
+
                     if output is not None:
                         # Send the PHP script's output as the response
                         response = f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{output}"
                         conn.send(response.encode('utf-8'))
+
                     else:
                         # Handle PHP script execution error
                         send_error_response(conn, '500 Internal Server Error', 'Error executing PHP script')
-                else:
-                    send_error_response(conn, '404 Not Found', 'File not found')
-            else:
-                # Handle serving static files here
-                # You need to send the file content as the response
-                # Ensure you handle 404 errors for static files as well
-                pass
 
-        elif request_method == 'POST':
-            pass
+                else:
+
+                    send_error_response(conn, '404 Not Found', 'File not found')
+            
+            elif request_method == 'POST':
+                pass
+            else:
+                send_error_response(conn, '405 Method Not Allowed', 'Method not allowed')
+
         else:
-            send_error_response(conn, '405 Method Not Allowed', 'Method not allowed')
+            # Check if the requested file is a static HTML file
+            if request_path.endswith('.html'):
+                static_file_path = os.path.join(directory, request_path.lstrip('/'))
+                
+                if os.path.exists(static_file_path):
+                    # Read the content of the static HTML file
+                    static_content = read_file_content(static_file_path)
+                    if static_content is not None:
+                        # Send the static file's content as the response
+                        response = f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{static_content}"
+                        conn.send(response.encode('utf-8'))
+                else:
+                    # Handle 404 error for static files
+                    send_error_response(conn, '404 Not Found', 'Static file not found')
+
 
         # Close the connection
         conn.close()
 
+# Define the host and port for the HTTP server
 host = "127.0.0.1"
 port = 2728
+
+# Start the HTTP server
 httpserver(host, port)

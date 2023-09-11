@@ -15,22 +15,14 @@ if (isset($_GET["submit"])) {
 }
 ?>
 
+<!DOCTYPE html>
 <html>
 <head>
-    <title>Add Two Numbers</title>
+    <title>Add Two Numbers Result</title>
 </head>
 <body>
-    <h1>Add Two Numbers</h1>
-    <form method="GET" action="">
-        <label for="num1">Enter the first number:</label>
-        <input type="text" id="num1" name="num1"><br><br>
-        
-        <label for="num2">Enter the second number:</label>
-        <input type="text" id="num2" name="num2"><br><br>
-
-        <input type="submit" name="submit" value="Add">
-    </form>
-
+    <h1>Add Two Numbers Result</h1>
+    
     <?php
     if (isset($result)) {
         echo "<p>Result: $result</p>";
