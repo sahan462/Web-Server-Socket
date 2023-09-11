@@ -28,7 +28,6 @@ def generate_temp_file(basic_file_path, query_string, request_method):
             # Write the basic content and additional PHP code to the temporary file
 
             parameters = query_string.split("&")
-            print("parameters", parameters)
 
             content = ""
 
@@ -53,8 +52,7 @@ def generate_temp_file(basic_file_path, query_string, request_method):
 
 # Function to execute a PHP script and return its output
 def execute_php_script(script_path, query_string):
-    print("script", script_path)
-    print("query string", query_string)
+
     try:
         # Use PHP to execute the temporary script with the query string
         php_command = ['php', script_path, query_string]
@@ -66,9 +64,8 @@ def execute_php_script(script_path, query_string):
 
         # Capture the output (HTML content) from PHP
         php_output, php_errors = php_process.communicate()
-
-
         return php_output.decode('utf-8')
+    
     except Exception as e:
         print("Error executing PHP script:", e)
         return None
@@ -93,18 +90,18 @@ def httpserver(host, port):
         request = conn.recv(4096).decode('utf-8')
         request_lines = request.split('\r\n')
         request_method, request_path, _ = request_lines[0].split()
+        print(request_method)
 
         query_string = ""
         if '?' in request_path:
             request_path, query_string = request_path.split('?')
-    
 
         # Check if the requested file is a PHP script
         if request_path.endswith('.php'):
 
             # Handle GET request
             if request_method == 'GET':
-                
+
                 php_request_path = os.path.join(directory, request_path.lstrip('/'))
 
                 if os.path.exists(php_request_path):
@@ -113,7 +110,6 @@ def httpserver(host, port):
                         php_request_path = generate_temp_file(php_request_path, query_string, request_method)
                     
                     output = execute_php_script(php_request_path, query_string)
-                    print("script_path:", php_request_path)
 
                     if output is not None:
                         # Send the PHP script's output as the response
@@ -129,7 +125,27 @@ def httpserver(host, port):
                     send_error_response(conn, '404 Not Found', 'File not found')
             
             elif request_method == 'POST':
-                pass
+                
+                query_string = request_lines[-1]
+
+                php_request_path = os.path.join(directory, request_path.lstrip('/'))
+
+                if os.path.exists(php_request_path):
+                    
+                    if (len(query_string) > 0):
+                        php_request_path = generate_temp_file(php_request_path, query_string, request_method)
+                    
+                    output = execute_php_script(php_request_path, query_string)
+
+                    if output is not None:
+                        # Send the PHP script's output as the response
+                        response = f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{output}"
+                        conn.send(response.encode('utf-8'))
+
+                    else:
+                        # Handle PHP script execution error
+                        send_error_response(conn, '500 Internal Server Error', 'Error executing PHP script')
+
             else:
                 send_error_response(conn, '405 Method Not Allowed', 'Method not allowed')
 

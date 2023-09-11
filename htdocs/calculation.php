@@ -1,10 +1,10 @@
 <?php
-if (isset($_GET["submit"])) {
+if (isset($_POST["submit"])) {
     // Check if both input fields are filled
-    if (!empty($_GET["num1"]) && !empty($_GET["num2"])) {
+    if (!empty($_POST["num1"]) && !empty($_POST["num2"])) {
         // Get the values entered by the user
-        $num1 = $_GET["num1"];
-        $num2 = $_GET["num2"];
+        $num1 = $_POST["num1"];
+        $num2 = $_POST["num2"];
 
         // Add the two numbers
         $result = $num1 + $num2;
