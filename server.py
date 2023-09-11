@@ -1,6 +1,8 @@
 import socket
 import os
 import subprocess
+import urllib
+import tempfile
 
 directory = "htdocs"
 
@@ -13,6 +15,33 @@ def read_file_content(file_path):
     except Exception as e:
         print("Error reading file:", e)
         return None
+    
+# Function to generate a temporary PHP script file with additional PHP code and parameters
+def generate_temp_file(basic_content, query_string):
+    try:
+        # Parse the query string into a dictionary of parameters
+        params = dict(urllib.parse.parse_qsl(query_string))
+
+        # Create a temporary PHP script file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.php', dir=directory, delete=False) as temp_script:
+            # Write the PHP code to extract parameters from the dictionary
+            php_code = ""
+            for key, value in params.items():
+                php_code += f"${key} = '{value}';\n"
+
+            # Combine the PHP code, basic content, and additional PHP code
+            complete_php_script = f"{php_code}\n{basic_content}"
+
+            # Write the complete PHP script to the temporary file
+            temp_script.write(complete_php_script)
+
+        # Return the path of the temporary script file
+        return temp_script.name
+    except Exception as e:
+        print("Error generating temporary PHP script:", e)
+        return None
+
+
 
 # Function to execute a PHP script and return its output
 def execute_php_script(script_path, query_string):
