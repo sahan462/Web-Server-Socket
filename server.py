@@ -1,7 +1,6 @@
 import socket
 import os
 import subprocess
-import urllib
 import tempfile
 
 directory = "htdocs"
@@ -16,24 +15,33 @@ def read_file_content(file_path):
         print("Error reading file:", e)
         return None
     
+    
 # Function to generate a temporary PHP script file with additional PHP code and parameters
-def generate_temp_file(basic_content, query_string):
+def generate_temp_file(basic_file_path, query_string, request_method):
     try:
-        # Parse the query string into a dictionary of parameters
-        params = dict(urllib.parse.parse_qsl(query_string))
+        # Read the content of the basic PHP script file
+        with open(basic_file_path, 'r') as basic_file:
+            basic_content = basic_file.read()
 
         # Create a temporary PHP script file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.php', dir=directory, delete=False) as temp_script:
-            # Write the PHP code to extract parameters from the dictionary
-            php_code = ""
-            for key, value in params.items():
-                php_code += f"${key} = '{value}';\n"
+            # Write the basic content and additional PHP code to the temporary file
 
-            # Combine the PHP code, basic content, and additional PHP code
-            complete_php_script = f"{php_code}\n{basic_content}"
+            parameters = query_string.split("&")
+            print("parameters", parameters)
 
-            # Write the complete PHP script to the temporary file
-            temp_script.write(complete_php_script)
+            content = ""
+
+            for pair in parameters:
+                key,value = pair.split("=")
+                content+= f"'{key}' => '{value}',"
+
+
+            temp_script.write(f'<?php $_{request_method} = array({content});?>')  # Set $_GET/$_POST values
+            temp_script.write("\n")
+            temp_script.write(basic_content)
+            temp_script.write("\n")  # Add a newline
+            
 
         # Return the path of the temporary script file
         return temp_script.name
@@ -100,6 +108,10 @@ def httpserver(host, port):
                 php_request_path = os.path.join(directory, request_path.lstrip('/'))
 
                 if os.path.exists(php_request_path):
+                    
+                    if (len(query_string) > 0):
+                        php_request_path = generate_temp_file(php_request_path, query_string, request_method)
+                    
                     output = execute_php_script(php_request_path, query_string)
                     print("script_path:", php_request_path)
 
