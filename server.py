@@ -77,11 +77,14 @@ def execute_php_script(script_path, query_string):
         return None
 
 
+
 # Function to send an error response
 def send_error_response(client_socket, status, message):
 
     response = f"HTTP/1.1 {status}\r\nContent-Type: text/html\r\n\r\n<h1>{status}</h1><p>{message}</p>"
     client_socket.send(response.encode('utf-8'))
+
+
 
 # Function to start an HTTP server
 def httpserver(host, port):
@@ -182,6 +185,9 @@ def httpserver(host, port):
 
         # Close the connection
         conn.close()
+
+
+
 
 # Define the host and port for the HTTP server
 host = "127.0.0.1"
