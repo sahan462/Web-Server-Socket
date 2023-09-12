@@ -31,7 +31,6 @@ def generate_index_html():
 
             # Generate links to the files
             for file in files:
-                print(file)
                 if file != "index.php" and os.path.isfile(os.path.join(directory, file)):
                     index_file.write(f'<li><a href="{file}">{file}</a></li>\n')
 
