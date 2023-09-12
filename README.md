@@ -19,7 +19,7 @@ This is a simple Python web server that supports PHP scripting. It allows you to
 4. Start the web server.
    ```bash
    python server.py
-5. Open your web browser and navigate to http://127.0.0.1:2728/index.html to access the server.
+5. Open your web browser and navigate to http://127.0.0.1:2728/ to access the server.
 
 ## Features
 - Supports both GET and POST requests.
