@@ -16,6 +16,32 @@ def read_file_content(file_path):
         return None
     
     
+
+# Function to generate an HTML file with links to files in the directory
+def generate_index_html():
+    try:
+        # Get a list of files in the directory
+        files = os.listdir(directory)
+
+        # Create an HTML file for the index
+        with open(os.path.join(directory, "index.php"), "w") as index_file:
+            index_file.write("<!DOCTYPE html>\n<html>\n<head>\n")
+            index_file.write("<title>Index of /</title>\n</head>\n<body>\n")
+            index_file.write("<h1>Index of /</h1>\n<hr>\n<ul>\n")
+
+            # Generate links to the files
+            for file in files:
+                print(file)
+                if file != "index.php" and os.path.isfile(os.path.join(directory, file)):
+                    index_file.write(f'<li><a href="{file}">{file}</a></li>\n')
+
+            index_file.write("</ul>\n<hr>\n</body>\n</html>\n")
+    except Exception as e:
+        print("Error generating index file:", e)
+
+
+    
+    
 # Function to generate a temporary PHP script file with additional PHP code and parameters
 def generate_temp_file(basic_file_path, query_string, request_method):
     try:
@@ -103,6 +129,10 @@ def httpserver(host, port):
         request = conn.recv(4096).decode('utf-8')
         request_lines = request.split('\r\n')
         request_method, request_path, _ = request_lines[0].split()
+
+        if(request_path == "/"):
+            generate_index_html()
+            request_path = "index.php"
 
         query_string = ""
         if '?' in request_path:
